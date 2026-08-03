@@ -2,7 +2,6 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import OpenAIEnums
 from openai import OpenAI
 import logging
-import os
 
 class OpenAIProvider(LLMInterface):
 
@@ -23,10 +22,9 @@ class OpenAIProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        if self.api_url:
-            os.environ["OPENAI_API_BASE"] = self.api_url
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_url)
+        self.enums = OpenAIEnums
 
-        self.client = OpenAI(api_key=self.api_key)
 
         self.logger = logging.getLogger(__name__)
 

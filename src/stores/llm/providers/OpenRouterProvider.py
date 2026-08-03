@@ -2,7 +2,6 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import OpenRouterEnums
 from openai import OpenAI
 import logging
-import os
 
 class OpenRouterProvider(LLMInterface):
 
@@ -23,10 +22,8 @@ class OpenRouterProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        if self.api_url:
-            os.environ["OPENAI_API_BASE"] = self.api_url
-
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_url)
+        self.enums = OpenRouterEnums
 
         self.logger = logging.getLogger(__name__)
 
@@ -69,8 +66,7 @@ class OpenRouterProvider(LLMInterface):
             self.logger.error("Error while generating text with OpenRouter")
             return None
 
-        return response.choices[0].message["content"]
-
+        return response.choices[0].message.content
 
     def embed_text(self, text: str, document_type: str = None):
         

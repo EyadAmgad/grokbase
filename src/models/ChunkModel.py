@@ -75,4 +75,3 @@ class ChunkModel(BaseDataModel):
             DataChunk(**record)
             for record in records
         ]
-    
