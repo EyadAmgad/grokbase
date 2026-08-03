@@ -1,10 +1,10 @@
 from ..LLMInterface import LLMInterface
-from ..LLMEnums import OpenAIEnums
+from ..LLMEnums import OpenRouterEnums
 from openai import OpenAI
 import logging
 import os
 
-class OpenAIProvider(LLMInterface):
+class OpenRouterProvider(LLMInterface):
 
     def __init__(self, api_key: str, api_url: str=None,
                        default_input_max_characters: int=1000,
@@ -44,18 +44,18 @@ class OpenAIProvider(LLMInterface):
                             temperature: float = None):
         
         if not self.client:
-            self.logger.error("OpenAI client was not set")
+            self.logger.error("OpenRouter client was not set")
             return None
 
         if not self.generation_model_id:
-            self.logger.error("Generation model for OpenAI was not set")
+            self.logger.error("Generation model for OpenRouter was not set")
             return None
         
         max_output_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
         temperature = temperature if temperature else self.default_generation_temperature
 
         chat_history.append(
-            self.construct_prompt(prompt=prompt, role=OpenAIEnums.USER.value)
+            self.construct_prompt(prompt=prompt, role=OpenRouterEnums.USER.value)
         )
 
         response = self.client.chat.completions.create(
@@ -66,7 +66,7 @@ class OpenAIProvider(LLMInterface):
         )
 
         if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message:
-            self.logger.error("Error while generating text with OpenAI")
+            self.logger.error("Error while generating text with OpenRouter")
             return None
 
         return response.choices[0].message["content"]
@@ -75,11 +75,11 @@ class OpenAIProvider(LLMInterface):
     def embed_text(self, text: str, document_type: str = None):
         
         if not self.client:
-            self.logger.error("OpenAI client was not set")
+            self.logger.error("OpenRouter client was not set")
             return None
 
         if not self.embedding_model_id:
-            self.logger.error("Embedding model for OpenAI was not set")
+            self.logger.error("Embedding model for OpenRouter was not set")
             return None
         
         response = self.client.embeddings.create(
@@ -88,7 +88,7 @@ class OpenAIProvider(LLMInterface):
         )
 
         if not response or not response.data or len(response.data) == 0 or not response.data[0].embedding:
-            self.logger.error("Error while embedding text with OpenAI")
+            self.logger.error("Error while embedding text with OpenRouter")
             return None
 
         return response.data[0].embedding
