@@ -7,7 +7,7 @@ import json
 class NLPController(BaseController):
 
     def __init__(self, vectordb_client, generation_client, 
-                 embedding_client, template_parser=None):
+                 embedding_client, template_parser):
         super().__init__()
 
         self.vectordb_client = vectordb_client
@@ -108,12 +108,12 @@ class NLPController(BaseController):
         documents_prompts = "\n".join([
             self.template_parser.get("rag", "document_prompt", {
                     "doc_num": idx + 1,
-                    "chunk_text": doc.text,
+                    "chunk_text": self.generation_client.process_text(doc.text),
             })
             for idx, doc in enumerate(retrieved_documents)
         ])
 
-        footer_prompt = self.template_parser.get("rag", "footer_prompt" , {
+        footer_prompt = self.template_parser.get("rag", "footer_prompt", {
             "query": query
         })
 
