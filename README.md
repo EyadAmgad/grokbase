@@ -58,7 +58,7 @@ QDRANT_URL=http://localhost:6333    # vector store
 
 ### Run FastAPI Server 
 
-```
+``` 
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
 
