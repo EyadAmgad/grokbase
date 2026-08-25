@@ -4,14 +4,14 @@ from fastapi.responses import JSONResponse
 from controllers import GithubController
 from models.ProjectModel import ProjectModel
 from .schemes.github import GithubRequest
-from models.enums import ResponseEnums
+from models import ResponseSignal
 
 github_router = APIRouter(
 	prefix="/api/v1/github",
 	tags=["api_v1", "github"],
 )
 
-@github_router.post("/process/repo/{project_id}")
+@github_router.post("/process/{project_id}")
 async def process_github_repo_endpoint(
 	request: Request,
 	project_id: int,
@@ -43,7 +43,7 @@ async def process_github_repo_endpoint(
 			depth=process_request.depth,
 			do_reset=process_request.do_reset == 1,
 		)
-		signal = result.get("signal", ResponseEnums.GITHUB_REPO_PROCESSED_SUCCESS.value)
+		signal = result.get("signal", ResponseSignal.GITHUB_REPO_PROCESSED_SUCCESS.value)
 		return JSONResponse(
 			content={
 				"signal": signal,
@@ -56,7 +56,7 @@ async def process_github_repo_endpoint(
 		return JSONResponse(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			content={
-				"signal": ResponseEnums.GITHUB_REPO_PROCESSING_FAILED.value,
+				"signal": ResponseSignal.GITHUB_REPO_PROCESSING_FAILED.value,
 				"detail": str(exc),
 			}
 		)

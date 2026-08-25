@@ -3,7 +3,7 @@ from .DataController import DataController
 from .ProjectController import ProjectController
 from .ProcessController import ProcessController, Document
 from models.db_schemes import Project, DataChunk, Asset
-from models.enums import ResponseEnums
+from models import ResponseSignal
 
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -170,7 +170,7 @@ class GithubController(BaseController):
 
 		if not repo_documents:
 			return {
-				"signal": ResponseEnums.NO_SUPPORTED_FILES_FOUND.value,
+				"signal": ResponseSignal.NO_SUPPORTED_FILES_FOUND.value,
 				"repo_path": repo_path,
 				"inserted_chunks": 0,
 				"processed_files": 0,
@@ -252,7 +252,7 @@ class GithubController(BaseController):
 
 		if not chunk_records:
 			return {
-				"signal": ResponseEnums.NO_CHUNKS_CREATED.value,
+				"signal": ResponseSignal.NO_CHUNKS_CREATED.value,
 				"repo_path": repo_path,
 				"inserted_chunks": 0,
 				"processed_files": len(asset_records),
@@ -266,7 +266,7 @@ class GithubController(BaseController):
 		)
 
 		return {
-			"signal": ResponseEnums.GITHUB_REPO_PROCESSED_SUCCESS.value,
+			"signal": ResponseSignal.GITHUB_REPO_PROCESSED_SUCCESS.value,
 			"repo_path": repo_path,
 			"inserted_chunks": len(chunk_records),
 			"processed_files": len(asset_records),

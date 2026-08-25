@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Grokbase</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-title">Grokbase</div>
+        <div class="brand-subtitle" id="appSubtitle">GitHub repo ingestion and Q&A</div>
+      </div>
+
+      <div class="session-block">
+        <div class="session-meta">
+          <span class="session-label" id="sessionLabel">Loading session...</span>
+          <span class="session-detail" id="sessionDetail"></span>
+        </div>
+        <button class="secondary-button" type="button" id="newSessionButton">New session</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel" id="setupPanel">
+        <div class="panel-heading">
+          <h1>Connect a repository</h1>
+          <p>Paste a public GitHub URL. Grokbase will ingest it into your current session.</p>
+        </div>
+
+        <form id="repoForm" class="stack-form">
+          <label class="field">
+            <span class="field-label">GitHub repo URL</span>
+            <input
+              id="repoUrlInput"
+              name="repoUrl"
+              type="url"
+              placeholder="https://github.com/owner/repo"
+              autocomplete="url"
+              required
+            >
+          </label>
+
+          <div class="form-row">
+            <button class="primary-button" id="repoSubmitButton" type="submit">Ingest repository</button>
+            <span class="inline-status" id="repoStatus">Create a session to begin.</span>
+          </div>
+
+          <p class="error-message" id="repoError" hidden></p>
+        </form>
+      </section>
+
+      <section class="panel chat-panel hidden" id="chatPanel">
+        <div class="panel-heading compact">
+          <h2>Ask questions about the repository</h2>
+          <p id="chatIntro">Your indexed repository is ready. Ask anything about its files, structure, or behavior.</p>
+        </div>
+
+        <div class="chat-empty" id="chatEmptyState">
+          <div class="empty-title">No messages yet</div>
+          <p>Ask a question to start the conversation.</p>
+        </div>
+
+        <div class="chat-thread" id="messageList" aria-live="polite" aria-relevant="additions text"></div>
+
+        <form id="questionForm" class="question-form">
+          <label class="field">
+            <span class="field-label">Your question</span>
+            <textarea
+              id="questionInput"
+              name="question"
+              rows="3"
+              placeholder="What does this repository do?"
+              autocomplete="off"
+              required
+            ></textarea>
+          </label>
+
+          <div class="form-row">
+            <button class="primary-button" id="questionSubmitButton" type="submit">Send question</button>
+            <span class="inline-status" id="questionStatus">Responses will appear here.</span>
+          </div>
+
+          <p class="error-message" id="questionError" hidden></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

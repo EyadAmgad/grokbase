@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from routes import base, data, nlp, github
 from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
@@ -11,6 +15,12 @@ from sqlalchemy.orm import sessionmaker
 from utils.metrics import setup_metrics
 
 app = FastAPI()
+
+views_dir = Path(__file__).resolve().parent / "views"
+static_dir = views_dir / "static"
+
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 setup_metrics(app)
 
@@ -53,8 +63,13 @@ async def startup_span():
 
 @app.on_event("shutdown")
 async def shutdown_span():
-    app.db_engine.dispose()
+    await app.db_engine.dispose()
     await app.vectordb_client.disconnect()
+
+
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    return FileResponse(views_dir / "index.html")
 
 
 app.include_router(base.base_router)

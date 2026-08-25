@@ -20,6 +20,7 @@ class ResponseSignal(Enum):
     RAG_ANSWER_ERROR = "rag_answer_error"
     RAG_ANSWER_SUCCESS = "rag_answer_success"
     GITHUB_REPO_PROCESSED_SUCCESS = "github_repo_processed_success"
-    GITHUB_REPO_PROCESSED_FAILED = "github_repo_processing_failed"
+    GITHUB_REPO_PROCESSED_FAILED = "github_repo_processed_failed"
+    GITHUB_REPO_PROCESSING_FAILED = "github_repo_processing_failed"
     NO_SUPPORTED_FILES_FOUND = "no_supported_files_found"
     NO_CHUNKS_CREATED = "no_chunks_created"
