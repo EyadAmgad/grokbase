@@ -11,85 +11,129 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-block">
-        <div class="brand-title">Grokbase</div>
-        <div class="brand-subtitle" id="appSubtitle">GitHub repo ingestion and Q&A</div>
-      </div>
-
-      <div class="session-block">
-        <div class="session-meta">
-          <span class="session-label" id="sessionLabel">Loading session...</span>
-          <span class="session-detail" id="sessionDetail"></span>
+        <div class="brand-mark" aria-hidden="true">G</div>
+        <div>
+          <div class="brand-title">Grokbase</div>
+          <div class="brand-subtitle" id="appSubtitle">Repository intelligence, grounded in source</div>
         </div>
-        <button class="secondary-button" type="button" id="newSessionButton">New session</button>
+      </div>
+      <div class="topbar-actions">
+        <span class="connection-dot" id="connectionDot" title="Connection status"></span>
+        <span class="session-detail" id="sessionDetail"></span>
+        <button class="secondary-button" type="button" id="newSessionButton">New repository</button>
       </div>
     </header>
 
     <main class="workspace">
-      <section class="panel" id="setupPanel">
-        <div class="panel-heading">
-          <h1>Connect a repository</h1>
-          <p>Paste a public GitHub URL. Grokbase will ingest it into your current session.</p>
+      <aside class="sidebar panel" aria-label="Repositories">
+        <div class="sidebar-heading">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h1>Repositories</h1>
+          </div>
+          <button class="icon-button" type="button" id="sidebarNewButton" title="Add repository" aria-label="Add repository">+</button>
         </div>
+        <div class="repo-list" id="repoList"></div>
+        <div class="sidebar-footer">
+          <span id="sessionLabel">Session loading...</span>
+          <span class="muted">Stored locally in this browser</span>
+        </div>
+      </aside>
 
-        <form id="repoForm" class="stack-form">
-          <label class="field">
-            <span class="field-label">GitHub repo URL</span>
-            <input
-              id="repoUrlInput"
-              name="repoUrl"
-              type="url"
-              placeholder="https://github.com/owner/repo"
-              autocomplete="url"
-              required
-            >
-          </label>
-
-          <div class="form-row">
-            <button class="primary-button" id="repoSubmitButton" type="submit">Ingest repository</button>
-            <span class="inline-status" id="repoStatus">Create a session to begin.</span>
+      <section class="content-column">
+        <section class="panel ingestion-panel" id="setupPanel">
+          <div class="panel-heading">
+            <p class="eyebrow">Start here</p>
+            <h2>Bring a repository into focus</h2>
+            <p>Connect a public GitHub repository, then ask questions against its indexed source.</p>
           </div>
 
-          <p class="error-message" id="repoError" hidden></p>
-        </form>
-      </section>
+          <form id="repoForm" class="stack-form" novalidate>
+            <label class="field field-wide">
+              <span class="field-label">GitHub repository URL</span>
+              <input id="repoUrlInput" name="repoUrl" type="url" placeholder="https://github.com/owner/repository" autocomplete="url" required>
+            </label>
 
-      <section class="panel chat-panel hidden" id="chatPanel">
-        <div class="panel-heading compact">
-          <h2>Ask questions about the repository</h2>
-          <p id="chatIntro">Your indexed repository is ready. Ask anything about its files, structure, or behavior.</p>
-        </div>
+            <div class="form-grid">
+              <label class="field">
+                <span class="field-label">Branch <span class="optional">optional</span></span>
+                <input id="branchInput" name="branch" type="text" placeholder="main" autocomplete="off">
+              </label>
+              <label class="field">
+                <span class="field-label">Chunk size</span>
+                <input id="chunkSizeInput" name="chunkSize" type="number" min="100" step="50" value="1000">
+              </label>
+              <label class="field">
+                <span class="field-label">Overlap</span>
+                <input id="overlapInput" name="overlap" type="number" min="0" step="25" value="200">
+              </label>
+              <label class="field">
+                <span class="field-label">Clone depth</span>
+                <input id="depthInput" name="depth" type="number" min="1" max="50" step="1" value="1">
+              </label>
+            </div>
 
-        <div class="chat-empty" id="chatEmptyState">
-          <div class="empty-title">No messages yet</div>
-          <p>Ask a question to start the conversation.</p>
-        </div>
+            <label class="checkbox-field">
+              <input id="resetInput" name="reset" type="checkbox">
+              <span>Reset the existing index for this project</span>
+            </label>
 
-        <div class="chat-thread" id="messageList" aria-live="polite" aria-relevant="additions text"></div>
+            <div class="form-row">
+              <button class="primary-button" id="repoSubmitButton" type="submit">Ingest repository</button>
+              <span class="inline-status" id="repoStatus">Ready when you are.</span>
+            </div>
+            <div class="progress-panel hidden" id="progressPanel" aria-live="polite">
+              <div class="progress-header"><span id="progressTitle">Preparing ingestion</span><span id="progressPercent">0%</span></div>
+              <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+              <ol class="stage-list" id="stageList">
+                <li data-stage="0">Cloning repository</li>
+                <li data-stage="1">Chunking source files</li>
+                <li data-stage="2">Generating embeddings</li>
+                <li data-stage="3">Indexing knowledge</li>
+              </ol>
+            </div>
+            <div class="inline-error" id="repoError" hidden></div>
+            <button class="secondary-button retry-button hidden" type="button" id="repoRetryButton">Retry ingestion</button>
+          </form>
+        </section>
 
-        <form id="questionForm" class="question-form">
-          <label class="field">
-            <span class="field-label">Your question</span>
-            <textarea
-              id="questionInput"
-              name="question"
-              rows="3"
-              placeholder="What does this repository do?"
-              autocomplete="off"
-              required
-            ></textarea>
-          </label>
-
-          <div class="form-row">
-            <button class="primary-button" id="questionSubmitButton" type="submit">Send question</button>
-            <span class="inline-status" id="questionStatus">Responses will appear here.</span>
+        <section class="panel chat-panel hidden" id="chatPanel">
+          <div class="chat-heading">
+            <div>
+              <p class="eyebrow">Active repository</p>
+              <h2 id="chatTitle">Repository chat</h2>
+              <p id="chatIntro">Ask about files, structure, and behavior.</p>
+            </div>
+            <span class="ready-badge">Indexed</span>
           </div>
 
-          <p class="error-message" id="questionError" hidden></p>
-        </form>
+          <div class="chat-empty" id="chatEmptyState">
+            <div class="empty-icon" aria-hidden="true">/</div>
+            <div class="empty-title">Start with a source question</div>
+            <p>Try asking what the project does, where a feature is implemented, or how data moves through it.</p>
+          </div>
+          <div class="chat-thread" id="messageList" aria-live="polite" aria-relevant="additions text"></div>
+
+          <form id="questionForm" class="question-form">
+            <label class="field">
+              <span class="field-label">Ask this repository</span>
+              <textarea id="questionInput" name="question" rows="3" placeholder="How does authentication flow through the app?" autocomplete="off" required></textarea>
+            </label>
+            <div class="form-row composer-actions">
+              <span class="hint">Enter to send · Shift+Enter for a new line</span>
+              <div class="send-actions">
+                <button class="secondary-button hidden" id="stopButton" type="button">Stop</button>
+                <button class="primary-button" id="questionSubmitButton" type="submit">Send question</button>
+              </div>
+            </div>
+            <span class="inline-status" id="questionStatus">Answers stay with this repository.</span>
+            <div class="inline-error" id="questionError" hidden></div>
+          </form>
+        </section>
       </section>
     </main>
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
   </div>
-
   <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
