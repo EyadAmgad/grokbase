@@ -118,6 +118,7 @@ cd src/models/db_schemes/minirag
 alembic upgrade head
 
 cd ../../../../
+cd src
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
