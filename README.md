@@ -10,6 +10,7 @@ GrokBase is a codebase question-answering service. It ingests uploaded files or 
 - PostgreSQL persistence through SQLAlchemy and asyncpg
 - PostgreSQL vector search through the PGVector provider, with Qdrant support
 - Chunk processing, vector indexing, similarity search, and RAG answers
+- Asynchronous file processing and indexing with Celery
 - FastAPI's generated OpenAPI documentation
 - Prometheus metrics, Grafana dashboards, PostgreSQL exporter, and node exporter
 
@@ -24,6 +25,10 @@ GrokBase is a codebase question-answering service. It ingests uploaded files or 
 | Database access | SQLAlchemy 2, asyncpg, psycopg2 |
 | Migrations | Alembic |
 | LLM and embeddings | OpenAI, Cohere, or OpenRouter providers |
+| Background processing | Celery workers and Celery Beat |
+| Message broker | RabbitMQ |
+| Result backend and cache | Redis |
+| Task monitoring | Flower |
 | Deployment | Docker Compose and Nginx |
 | Monitoring | Prometheus, Grafana, node-exporter, postgres-exporter |
 | Frontend | Static HTML, CSS, and JavaScript served by FastAPI |
@@ -33,8 +38,9 @@ GrokBase is a codebase question-answering service. It ingests uploaded files or 
 1. A client uploads files or submits a GitHub repository for a project.
 2. The data controller validates files and stores them under `src/assets/files/<project_id>`; project and asset records are stored in PostgreSQL.
 3. The process controller extracts content and creates overlapping chunks. Chunk records are persisted in PostgreSQL.
-4. The NLP controller creates a project collection and sends chunk embeddings to the configured vector database.
-5. Search embeds a question and retrieves relevant chunks. The answer endpoint passes that context to the configured generation model.
+4. Long-running file processing and vector indexing jobs are submitted to Celery. RabbitMQ transports task messages and Redis stores task results.
+5. The NLP controller creates a project collection and sends chunk embeddings to the configured vector database.
+6. Search embeds a question and retrieves relevant chunks. The answer endpoint passes that context to the configured generation model.
 
 Each project is identified by an integer `project_id`. Project records are created when an ingestion or NLP endpoint first receives a new project ID.
 
@@ -98,6 +104,12 @@ VECTOR_DB_PATH=./assets/database/qdrant_db
 FILE_ALLOWED_TYPES=[".txt", ".pdf", ".md", ".py"]
 FILE_MAX_SIZE=10485760
 FILE_DEFAULT_CHUNK_SIZE=1000
+
+CELERY_BROKER_URL=amqp://minirag_user:password@localhost:5672/minirag_vhost
+CELERY_RESULT_BACKEND=redis://:password@localhost:6379/0
+CELERY_TASK_SERIALIZER=json
+CELERY_TASK_TIME_LIMIT=600
+CELERY_WORKER_CONCURRENCY=2
 ```
 
 Provider-specific settings such as `COHERE_API_KEY`, `OPENROUTERS_API_KEY`, `OPENAI_API_URL`, and `OPENROUTERS_API_URL` may be added when those providers are selected. Use the names defined in `src/helpers/config.py` and the files in `docker/env/` as the source of truth for a deployment.
@@ -118,7 +130,23 @@ cd src/models/db_schemes/minirag
 alembic upgrade head
 
 cd ../../../../
+cd src
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+In a separate terminal, start the Celery worker from `src`:
+
+```bash
+cd src
+python -m celery -A celery_app:celery_app worker \
+	--queues=default,file_processing,data_indexing --loglevel=info
+```
+
+Start Celery Beat when scheduled tasks are required:
+
+```bash
+cd src
+python -m celery -A celery_app:celery_app beat --loglevel=info
 ```
 
 The local API is available at <http://localhost:8000>. The interactive documentation is at <http://localhost:8000/docs> and the ReDoc documentation is at <http://localhost:8000/redoc>.
@@ -128,6 +156,11 @@ The local API is available at <http://localhost:8000>. The interactive documenta
 The Compose stack includes:
 
 - `fastapi`: the GrokBase API on port `8000`
+- `celery-worker`: asynchronous file-processing and data-indexing worker
+- `celery-beat`: scheduler for periodic Celery tasks
+- `rabbitmq`: AMQP message broker on ports `5672` and `15672`
+- `redis`: task result backend and cache on port `6379`
+- `flower`: Celery task monitoring dashboard on port `5555`
 - `nginx`: reverse proxy on port `80`
 - `pgvector`: PostgreSQL 17 with the PGVector extension on port `5432`
 - `qdrant`: optional vector database on ports `6333` and `6334`
@@ -143,6 +176,8 @@ cp .env.example.app .env.app
 cp .env.example.postgres .env.postgres
 cp .env.example.grafana .env.grafana
 cp .env.example.postgres-exporter .env.postgres-exporter
+cp .env.example.rabbitmq .env.rabbitmq
+cp .env.example.redis .env.redis
 
 cd ..
 docker compose up --build -d
@@ -153,11 +188,14 @@ Useful commands:
 ```bash
 docker compose ps
 docker compose logs --tail=100 fastapi
+docker compose logs --tail=100 celery-worker
+docker compose logs --tail=100 rabbitmq
+docker compose logs --tail=100 redis
 docker compose logs --tail=100 pgvector
 docker compose down
 ```
 
-The Docker application is available through Nginx at <http://localhost>, directly at <http://localhost:8000>, and in the browser at <http://localhost/docs>. Persistent data is stored in named volumes for PostgreSQL, Qdrant, uploaded assets, Prometheus, and Grafana.
+The Docker application is available through Nginx at <http://localhost>, directly at <http://localhost:8000>, and in the browser at <http://localhost/docs>. RabbitMQ's management UI is available at <http://localhost:15672>, and Flower is available at <http://localhost:5555>. Persistent data is stored in named volumes for PostgreSQL, Qdrant, uploaded assets, Prometheus, Grafana, RabbitMQ, Redis, and Celery Beat.
 
 ## Database Migrations
 
@@ -234,7 +272,7 @@ The `do_reset` flag is an integer where `1` resets the relevant project data or 
 
 ## Monitoring
 
-Prometheus scrapes FastAPI, Qdrant, PostgreSQL, the host node, and Prometheus itself. FastAPI request counts and latency are exposed at `/TrhBVe_m5gg2002_E5VVqS`, which is intentionally excluded from the public OpenAPI schema. Grafana is available at <http://localhost:3000> when the Docker monitoring services are running.
+Prometheus scrapes FastAPI, Qdrant, PostgreSQL, the host node, and Prometheus itself. FastAPI request counts and latency are exposed at `/TrhBVe_m5gg2002_E5VVqS`, which is intentionally excluded from the public OpenAPI schema. Grafana is available at <http://localhost:3000> when the Docker monitoring services are running. Flower provides a live view of Celery workers, queues, task states, retries, and task execution details at <http://localhost:5555>.
 
 ## Contributing
 

@@ -24,3 +24,6 @@ class ResponseSignal(Enum):
     GITHUB_REPO_PROCESSING_FAILED = "github_repo_processing_failed"
     NO_SUPPORTED_FILES_FOUND = "no_supported_files_found"
     NO_CHUNKS_CREATED = "no_chunks_created"
+    PROCESSING_STARTED = "processing_started"
+    DATA_PUSH_TASK_READY = "data_push_task_ready"
+    PROCESS_AND_PUSH_WORKFLOW_READY = "process_and_push_workflow_ready"
