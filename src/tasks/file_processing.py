@@ -154,7 +154,22 @@ async def _process_project_files(task_instance, project_id: int,
                 for record in project_files
             }
 
-        if len(project_files_ids) == 0:
+        # Expand uploaded archives into their extracted, indexable files so the
+        # existing per-file loaders below keep working unchanged. Chunks from a
+        # zip's contents stay attributed to the zip's asset id.
+        process_controller = ProcessController(project_id=project_id)
+
+        files_to_process = []
+        for asset_id, file_name in project_files_ids.items():
+            if process_controller.is_zip_file(file_id=file_name):
+                extracted = process_controller.extract_zip_file(file_id=file_name)
+                if not extracted:
+                    logger.error(f"No supported files extracted from archive: {file_name}")
+                files_to_process.extend((asset_id, name) for name in extracted)
+            else:
+                files_to_process.append((asset_id, file_name))
+
+        if len(files_to_process) == 0:
 
             task_instance.update_state(
                 state="FAILURE",
@@ -167,11 +182,11 @@ async def _process_project_files(task_instance, project_id: int,
             await idempotency_manager.update_task_status(
                 execution_id=task_record.execution_id,
                 status='FAILURE',
-                result={"signal": ResponseSignal.NO_FILES_ERROR.value,}
+                result={"signal": ResponseSignal.NO_FILES_ERROR.value}
             )
 
-            raise Exception(f"No files found for project_id: {project.project_id}")
-        
+            raise Exception(f"No processable files found for project_id: {project.project_id}")
+
         process_controller = ProcessController(project_id=project_id)
 
         no_records = 0
@@ -191,7 +206,7 @@ async def _process_project_files(task_instance, project_id: int,
                 project_id=project.project_id
             )
 
-        for asset_id, file_id in project_files_ids.items():
+        for asset_id, file_id in files_to_process:
 
             file_content = process_controller.get_file_content(file_id=file_id)
 

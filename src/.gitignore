@@ -1,2 +1,15 @@
 .env
 STREAMING_BACKEND_NOTES.md
+
+# Frontend (src/views/frontend) — generated / vendored artifacts
+frontend/node_modules/*
+views/frontend/node_modules/
+views/frontend/dist/
+
+# Built React chat workspace output (produced by `npm run build`)
+views/static/react/
+
+# Python bytecode cache — regenerated on every run
+__pycache__/
+*.py[cod]
+views/frontend/.env
