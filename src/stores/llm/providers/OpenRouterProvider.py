@@ -68,6 +68,39 @@ class OpenRouterProvider(LLMInterface):
 
         return response.choices[0].message.content
 
+    def generate_text_stream(self, prompt: str, chat_history: list=[], max_output_tokens: int=None,
+                                    temperature: float = None):
+
+        if not self.client:
+            self.logger.error("OpenRouter client was not set")
+            return
+
+        if not self.generation_model_id:
+            self.logger.error("Generation model for OpenRouter was not set")
+            return
+
+        max_output_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
+        temperature = temperature if temperature else self.default_generation_temperature
+
+        chat_history.append(
+            self.construct_prompt(prompt=prompt, role=OpenRouterEnums.USER.value)
+        )
+
+        response = self.client.chat.completions.create(
+            model = self.generation_model_id,
+            messages = chat_history,
+            max_tokens = max_output_tokens,
+            temperature = temperature,
+            stream = True
+        )
+
+        for chunk in response:
+            if not chunk.choices or len(chunk.choices) == 0:
+                continue
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield delta.content
+
     def embed_text(self, text: Union[str, List[str]], document_type: str = None):
         
         if not self.client:

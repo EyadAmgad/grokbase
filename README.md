@@ -54,7 +54,9 @@ src/
 	models/                         Domain models and Alembic database schemes
 	stores/                         LLM and vector database provider implementations
 	helpers/config.py               Environment-backed application settings
-	views/                          Browser UI and static assets
+	views/
+	├── frontend/                     React AI Chat Workspace (TypeScript + Tailwind source)
+	└── static/                       Browser UI static assets (built react bundle in static/react)
 	assets/                         Uploaded files and local vector database data
 docker/
 	docker-compose.yml              Application, databases, proxy, and monitoring
@@ -150,6 +152,34 @@ python -m celery -A celery_app:celery_app beat --loglevel=info
 ```
 
 The local API is available at <http://localhost:8000>. The interactive documentation is at <http://localhost:8000/docs> and the ReDoc documentation is at <http://localhost:8000/redoc>.
+
+## React AI Chat Workspace
+
+A production-ready chat UI lives in `src/views/frontend` (React 19 + TypeScript + Tailwind CSS 4 + Vite). It speaks the existing backend contract directly:
+
+- `GET /api/v1/` for backend readiness (guest user resolution — the API has no account system)
+- `POST /api/v1/nlp/index/answer/{project_id}` with `{text, limit}` for answers
+- No SSE yet: the JSON answer is rendered progressively; `VITE_STREAM_MODE=sse|websocket` activates generic streaming paths in `src/views/frontend/src/lib/adapter/restAdapter.ts`
+
+### Frontend development
+
+```bash
+cd src/views/frontend
+npm install
+cp .env.example .env          # all keys optional — unset = offline mock mode
+npm run dev                   # http://localhost:5173 (proxies /api to :8000)
+```
+
+With no configuration the workspace runs against an offline simulated backend, which makes UI work independent of Postgres/vector-DB infra. To exercise the real API, keep `VITE_API_MODE=rest` (or set `VITE_API_URL`) and adjust `VITE_PROJECT_ID` / `VITE_TOP_K`.
+
+### Frontend production build
+
+```bash
+cd src/views/frontend
+npm run build                 # outputs to src/views/static/react
+```
+
+The bundle is served by FastAPI with no extra routes: the workspace is available at <http://localhost:8000/chat> (added in `main.py`) or <http://localhost:8000/static/react/index.html>. `src/views/static/react/` is generated output and ignored by git.
 
 ## Docker Setup
 

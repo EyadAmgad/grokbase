@@ -87,7 +87,10 @@ async def upload_data(request: Request, project_id: int, file: UploadFile,
     return JSONResponse(
             content={
                 "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-                "file_id": str(asset_record.asset_id),
+                # /data/process|process-and-push resolve the asset by *name*
+                # (assets tables look up `asset_name`), not the numeric id.
+                "file_id": asset_record.asset_name,
+                "asset_id": str(asset_record.asset_id),
             }
         )
 

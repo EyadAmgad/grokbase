@@ -69,7 +69,13 @@ async def shutdown_span():
 
 @app.get("/", include_in_schema=False)
 async def serve_frontend():
-    return FileResponse(views_dir / "index.html")
+    """React AI Chat Workspace (built from views/frontend into views/static/react)."""
+    return FileResponse(views_dir / "static" / "react" / "index.html")
+
+
+@app.get("/chat", include_in_schema=False)
+async def serve_chat_workspace():
+    return FileResponse(views_dir / "static" / "react" / "index.html")
 
 
 app.include_router(base.base_router)
