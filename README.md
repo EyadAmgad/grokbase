@@ -35,6 +35,8 @@ GrokBase is a codebase question-answering service. It ingests uploaded files or 
 
 ## Architecture
 
+![GrokBase system architecture](docs/system-architecture.png)
+
 1. A client uploads files or submits a GitHub repository for a project.
 2. The data controller validates files and stores them under `src/assets/files/<project_id>`; project and asset records are stored in PostgreSQL.
 3. The process controller extracts content and creates overlapping chunks. Chunk records are persisted in PostgreSQL.
